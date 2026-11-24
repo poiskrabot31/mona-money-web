@@ -59,6 +59,18 @@ h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
 .quick input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;outline:none}
 .quick input:focus{border-color:var(--accent)}
 .quick button{background:var(--accent);color:#fff;border-radius:14px;padding:0 16px;font-weight:600}
+.quick .mic{background:var(--accent-soft);color:var(--accent);padding:0 12px;display:grid;place-items:center}
+.quick .mic.on{background:var(--exp);color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.5)}100%{box-shadow:0 0 0 14px rgba(229,72,77,0)}}
+.tx.flash{animation:flash 1.6s}
+@keyframes flash{0%,40%{background:var(--accent-soft)}100%{background:transparent}}
+.toast.act{pointer-events:auto;cursor:pointer;white-space:normal;max-width:calc(100% - 32px);text-align:center}
+.toast .undo{margin-left:10px;color:var(--accent-soft);text-decoration:underline}
+.steps{margin:8px 0;padding-left:20px;font-size:14px}
+.steps li{margin:6px 0}
+.copy{display:flex;gap:8px;align-items:center;background:var(--bg);border-radius:12px;padding:8px 8px 8px 12px;margin:8px 0}
+.copy code{flex:1;min-width:0;font-size:12px;word-break:break-all}
+.copy button{background:var(--accent);color:#fff;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;flex:none}
 .hint{font-size:12px;color:var(--muted);margin:6px 2px 14px}
 
 /* tx list */
@@ -166,10 +178,11 @@ h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
       </div>
     </div>
     <form class="quick" id="quick" autocomplete="off">
-      <input id="quickIn" placeholder="500 кофе  или  +60000 зарплата" inputmode="text" enterkeyhint="done">
+      <input id="quickIn" placeholder="кофе 300 и такси 500" inputmode="text" enterkeyhint="done">
+      <button type="button" id="mic" class="mic" aria-label="Голосовой ввод"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <button type="submit">OK</button>
     </form>
-    <div class="hint">Быстрый ввод, как в боте: сумма и слово. Плюс в начале — доход.</div>
+    <div class="hint">Пишите или говорите как удобно: «кофе 300 и такси 500», «+60 000 зарплата», «2 тысячи продукты». Категории подберутся сами.</div>
     <div id="list"></div>
   </section>
 
@@ -207,6 +220,25 @@ h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
         <input id="newCat" placeholder="Новая категория">
       </div>
       <div class="pair"><button class="btn" id="addCatExp" style="margin:0">+ в расходы</button><button class="btn" id="addCatInc" style="margin:0">+ в доходы</button></div>
+    </div>
+    <div class="card" id="ccCard">
+      <b>🎛 Кнопка в Пункте управления</b>
+      <div class="muted sm" style="margin-top:4px">Смахнули вниз → нажали кнопку → сказали «кофе 300» → записано. Нужна iOS 26 или новее и приложение, установленное на экран «Домой».</div>
+      <ol class="steps">
+        <li>Откройте приложение <b>Команды</b> → <b>+</b> (новая команда).</li>
+        <li>Добавьте действие <b>«Продиктовать текст»</b>, язык — <b>Русский</b>.</li>
+        <li>Добавьте <b>«Кодировать URL»</b> — оно само возьмёт «Продиктованный текст».</li>
+        <li>Добавьте <b>«Открыть URL»</b>: вставьте ссылку ниже и сразу после неё переменную <b>«Закодированный URL»</b>.</li>
+        <li>Назовите команду <b>«Записать трату»</b>, выберите иконку.</li>
+        <li>Смахните вниз Пункт управления → <b>+</b> → <b>Добавить элемент управления</b> → <b>Команды</b> → «Записать трату».</li>
+      </ol>
+      <div class="copy"><code id="ccUrl"></code><button id="ccCopy">Копировать</button></div>
+      <div class="muted sm">Эту же команду можно повесить на кнопку «Действие» (iPhone 15 Pro и новее) или на двойное касание задней крышки: Настройки → Универсальный доступ → Касание → Касание задней панели.</div>
+    </div>
+    <div class="card">
+      <b>📲 Перенос на другой телефон</b>
+      <div class="muted sm" style="margin:4px 0 6px">Создаст ссылку со всеми операциями и категориями. Откройте её на другом телефоне — данные добавятся к тем, что там уже есть.</div>
+      <button class="btn primary" id="shareData">Отправить данные ссылкой</button>
     </div>
     <div class="card">
       <b>Данные</b>
@@ -290,6 +322,8 @@ let S = null;
 try { if (window.__NATIVE_DATA) S = JSON.parse(window.__NATIVE_DATA); } catch(e) { S = null; }
 if (!S) { try { S = JSON.parse(localStorage.getItem(KEY)) || null; } catch(e) { S = null; } }
 if (!S || !S.cats) S = JSON.parse(JSON.stringify(DEFAULT));
+S.learn ||= {};
+S.settings ||= {cur:'₽', budget:0};
 const save = () => {
   const json = JSON.stringify(S);
   native({cmd:'save', data:json});
@@ -320,7 +354,13 @@ const ym = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
 const monthName = d => { const s = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'}).replace(/\s*г\.?$/,''); return s[0].toUpperCase() + s.slice(1); };
 const inMonth = (t, d) => t.date.startsWith(ym(d));
 
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+function toast(msg, undo){
+  const t=$('#toast');
+  t.innerHTML = esc(msg) + (undo ? '<b class="undo">Отменить</b>' : '');
+  t.classList.toggle('act', !!undo); t.classList.add('show');
+  if (!undo) undoIds = null;
+  clearTimeout(t._h); t._h=setTimeout(()=>{ t.classList.remove('show','act'); undoIds = null; }, undo ? 5000 : 1800);
+}
 
 /* ---------- views ---------- */
 let view = 'home';
@@ -464,33 +504,142 @@ $('#importFile').onchange = e => {
 };
 $('#wipe').onclick = () => { if (confirm('Удалить все операции без возможности восстановления?')) { S.tx=[]; save(); render(); toast('Операции удалены'); } };
 
-/* ---------- quick input ---------- */
-function guessCat(type, words){
-  const w = words.toLowerCase();
+/* ---------- автоматическое распределение по категориям ---------- */
+// Расширенный словарь (дополняет ключевые слова категорий, в т.ч. у тех, кто ставил приложение раньше).
+const EXTRA_KW = {
+  food:'вода продукты еда магазин супермаркет пятерочка пятёрочка магнит перекресток перекрёсток лента ашан вкусвилл дикси окей metro метро-кэш fix спар globus глобус самокат сбермаркет купер лавка хлеб молоко мясо овощи фрукты яйца сыр рынок',
+  cafe:'кафе кофе кофейня ресторан обед ужин завтрак ланч бар пиво пицца суши роллы шаурма бургер макдональдс вкусно kfc ростикс додо доставка столовая чай перекус',
+  car:'такси яндекс.такси uber убер ситимобил метро автобус трамвай троллейбус транспорт бензин топливо заправка азс лукойл газпромнефть роснефть парковка проезд электричка поезд ржд билет мойка шиномонтаж каршеринг штраф платная',
+  home:'квартира аренда съем жкх коммуналка квартплата свет электричество газ вода отопление ремонт дом мебель икеа леруа хозтовары бытовая химия',
+  conn:'связь телефон интернет мобильный сотовый мтс билайн мегафон теле2 tele2 ростелеком роутер',
+  health:'аптека врач лекарства таблетки здоровье стоматолог зубы анализы клиника больница массаж витамины очки',
+  shop:'одежда обувь куртка джинсы кроссовки покупки озон ozon wb вайлдберриз wildberries маркетплейс техника телефон наушники ноутбук dns мвидео эльдорадо яндекс маркет алиэкспресс косметика',
+  fun:'кино развлечения игры игра steam концерт театр музей отдых боулинг кальян клуб вечеринка книга хобби спортзал фитнес бассейн абонемент',
+  subs:'подписка подписки плюс музыка netflix spotify кинопоиск иви okko vk музыка icloud айклауд облако youtube ютуб',
+  gift:'подарок подарки цветы букет день рождения др сувенир',
+  edu:'курсы курс обучение книги школа учеба учёба репетитор кружок секция университет',
+  salary:'зарплата зп аванс оклад премия бонус получка',
+  side:'подработка фриланс заказ халтура клиент проект',
+  gifts:'подарок подарили подарила',
+  cashb:'кешбэк кэшбэк кешбек кэшбек проценты вклад дивиденды купон возврат вернули'
+};
+const INCOME_RE = /^\s*\+|зарплат|\bзп\b|аванс|преми|получк|кешб|кэшб|кешбек|получил|получила|пришл[оаи]|поступлен|доход|вернул|возврат|продал|перевели мне|скинули|подарили|дивиденд|проценты по/i;
+const STOP = new Set('на за в во и а с со по от до из к у о об для потратил потратила потрачено купил купила заплатил заплатила оплатил оплатила оплата отдал отдала рубль рубля рублей руб р ₽ тысяч тысяча тысячи тыс ещё еще плюс минус это было сегодня вчера'.split(' '));
+
+const words = s => s.toLowerCase().replace(/ё/g,'е').split(/[^a-zа-я0-9.]+/i).filter(w => w && !STOP.has(w) && !/^\d/.test(w));
+const stemEq = (a, b) => a === b || (a.length > 3 && b.length > 3 && a.slice(0, Math.max(4, Math.min(a.length, b.length) - 2)) === b.slice(0, Math.max(4, Math.min(a.length, b.length) - 2)));
+
+function guessCat(type, note){
+  const ws = words(note);
+  // 1) чему научилось приложение по вашим правкам
+  for (const w of ws) { const l = S.learn[w]; if (l && l.type === type && S.cats[type].some(c => c.id === l.cat)) return l.cat; }
+  // 2) словарь + названия категорий
+  let best = null, bestScore = 0;
   for (const c of S.cats[type]) {
-    const keys = (c.kw||'').split(/\s+/).concat(c.name.toLowerCase()).filter(Boolean);
-    if (keys.some(k => w.includes(k) || (k.length>4 && w.split(/\s+/).some(x => x.length>3 && k.startsWith(x.slice(0,-1)))))) return c.id;
+    const keys = ((c.kw||'') + ' ' + (EXTRA_KW[c.id]||'') + ' ' + c.name).toLowerCase().replace(/ё/g,'е').split(/\s+/).filter(Boolean);
+    let score = 0;
+    for (const w of ws) for (const k of keys) if (stemEq(w, k)) { score += k.length; break; }
+    if (score > bestScore) { bestScore = score; best = c.id; }
   }
+  if (best) return best;
   const o = S.cats[type].find(c=>c.name==='Другое') || S.cats[type][S.cats[type].length-1];
   return o.id;
 }
+// запоминаем выбор категории: «шаурма» → Кафе
+function learn(note, type, cat){
+  const ws = words(note).filter(w => w.length >= 3).slice(0, 3);
+  for (const w of ws) S.learn[w] = {type, cat};
+}
+
+/* Разбор фразы: «кофе 300 и такси 450», «+60 000 зарплата», «потратил 2 тысячи на продукты», «5к бензин» */
+const NUM_RE = /(\d+)(?:[.,](\d{1,2}))?(?:\s*(тысяч[аи]?|тыс\.?|млн|к|k)(?=[\s,.;!?]|$))?/gi;
+function parseEntries(text){
+  const t = String(text).replace(/ /g,' ').replace(/(\d)\s+(?=\d{3}(?!\d))/g, '$1');   // «60 000» → «60000»
+  const parts = t.split(/\s*(?:[;\n]|,(?!\d)|\sи\s|\sа также\s|\sплюс\s(?=[^\d]*\d)|\sещ[её]\s)\s*/i).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  let pending = '';
+  for (let p of parts) {
+    NUM_RE.lastIndex = 0;
+    const m0 = NUM_RE.exec(p);
+    if (!m0) {
+      if (out.length) out[out.length-1].note = (out[out.length-1].note + ' ' + p).trim(); else pending += ' ' + p;
+      continue;
+    }
+    if (pending) { p = pending.trim() + ' ' + p; pending = ''; }
+    NUM_RE.lastIndex = 0;
+    const m = NUM_RE.exec(p);
+    let amount = parseFloat(m[1].replace(/\s/g,'') + (m[2] ? '.' + m[2] : ''));
+    const mult = (m[3]||'').toLowerCase();
+    if (/^тыс|^к$|^k$/.test(mult)) amount *= 1000; else if (mult === 'млн') amount *= 1e6;
+    if (!(amount > 0)) continue;
+    let note = (p.slice(0, m.index) + ' ' + p.slice(m.index + m[0].length))
+      .replace(/^\s*[+\-]/, '').replace(/\b(руб(лей|ля|ль)?|р\.?)(?=\s|$)|₽/gi, '').replace(/\s+/g,' ').trim();
+    note = note.split(' ').filter(w => !STOP.has(w.toLowerCase())).join(' ');
+    const type = INCOME_RE.test(p) ? 'inc' : 'exp';
+    out.push({amount: Math.round(amount*100)/100, note, type});
+  }
+  return out;
+}
+
+let undoIds = null;
+function addFromText(text, source){
+  const items = parseEntries(text);
+  if (!items.length) { toast('Не нашёл сумму. Пример: «500 кофе»'); return false; }
+  const ids = [];
+  for (const it of items) {
+    const cat = guessCat(it.type, it.note);
+    const id = uid(); ids.push(id);
+    S.tx.push({id, type: it.type, amount: it.amount, cat, note: it.note, date: today(), ts: Date.now(), src: source || undefined});
+  }
+  save(); native({cmd:'haptic'});
+  cur = new Date(); cur.setDate(1);
+  if (view !== 'home') $('.tabs [data-v="home"]').click(); else render();
+  const added = S.tx.filter(t => ids.includes(t.id));
+  const msg = added.map(t => `${catOf(t.type,t.cat).name} ${fmt(t.type==='inc'?t.amount:-t.amount, true)}`).join(', ');
+  undoIds = ids;
+  toast('✓ ' + msg, true);
+  added.forEach(t => { const el = document.querySelector(`.tx[data-id="${t.id}"]`); if (el) { el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 1600); } });
+  return true;
+}
+$('#toast').onclick = () => {
+  if (!undoIds) return;
+  S.tx = S.tx.filter(t => !undoIds.includes(t.id)); undoIds = null;
+  save(); render(); toast('Отменено');
+};
+
 $('#quick').onsubmit = e => {
   e.preventDefault();
   const raw = $('#quickIn').value.trim(); if (!raw) return;
-  const m = raw.match(/^([+\-])?\s*(\d[\d\s]*(?:[.,]\d{1,2})?)\s*(.*)$/) || raw.match(/^(.*?)\s+([+\-])?\s*(\d[\d\s]*(?:[.,]\d{1,2})?)$/);
-  let sign, num, note;
-  if (!m) return toast('Начните с суммы: «500 кофе»');
-  if (/^[+\-]?\s*\d/.test(raw)) { [, sign, num, note] = m; } else { [, note, sign, num] = m; }
-  const amount = parseFloat(num.replace(/\s/g,'').replace(',','.'));
-  if (!(amount > 0)) return toast('Сумма должна быть больше нуля');
-  let type = sign === '+' ? 'inc' : 'exp';
-  if (!sign && /зарплат|зп\b|аванс|премия|кешб|кэшб/i.test(note)) type = 'inc';
-  const cat = guessCat(type, note);
-  S.tx.push({id:uid(), type, amount, cat, note:note.trim(), date:today(), ts:Date.now()});
-  save(); native({cmd:'haptic'}); $('#quickIn').value=''; $('#quickIn').blur();
-  cur = new Date(); cur.setDate(1); render();
-  toast(`${type==='inc'?'Доход':'Расход'} ${fmt(amount)} → ${catOf(type,cat).name}`);
+  if (addFromText(raw)) { $('#quickIn').value=''; $('#quickIn').blur(); }
 };
+
+/* ---------- голосовой ввод ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function startVoice(){
+  if (rec) { rec.stop(); return; }
+  if (!SR || NATIVE) {
+    $('#quickIn').focus();
+    toast('Нажмите 🎤 на клавиатуре и продиктуйте');
+    return;
+  }
+  try { rec = new SR(); } catch(e) { rec = null; $('#quickIn').focus(); toast('Нажмите 🎤 на клавиатуре и продиктуйте'); return; }
+  rec.lang = 'ru-RU'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  let text = '';
+  const ph = $('#quickIn').placeholder;
+  $('#mic').classList.add('on'); $('#quickIn').placeholder = 'Говорите: «кофе 300 и такси 500»'; $('#quickIn').value = '';
+  rec.onresult = e => { text = [...e.results].map(r => r[0].transcript).join(' '); $('#quickIn').value = text; };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Разрешите доступ к микрофону в настройках');
+    else if (e.error === 'no-speech') toast('Ничего не услышал');
+  };
+  rec.onend = () => {
+    rec = null; $('#mic').classList.remove('on'); $('#quickIn').placeholder = ph;
+    if (text.trim() && addFromText(text, 'голос')) $('#quickIn').value = '';
+  };
+  try { rec.start(); } catch(e) { rec = null; $('#mic').classList.remove('on'); }
+}
+$('#mic').onclick = startVoice;
 
 /* ---------- add/edit sheet ---------- */
 let edit = null, fType = 'exp', fCat = null, fAmt = '';
@@ -534,6 +683,7 @@ $('#saveTx').onclick = () => {
   const amount = parseFloat((fAmt||'').replace(',','.'));
   if (!(amount > 0)) return toast('Введите сумму');
   const data = {type:fType, amount, cat:fCat, note:$('#fNote').value.trim(), date:$('#fDate').value || today()};
+  if (data.note) learn(data.note, data.type, data.cat);
   if (edit) Object.assign(edit, data); else S.tx.push({id:uid(), ts:Date.now(), ...data});
   save(); native({cmd:'haptic'}); closeSheet();
   const d = new Date(data.date+'T00:00'); cur = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -553,6 +703,63 @@ if (location.protocol === 'file:') try {
 } catch(e) {}
 
 if (NATIVE) $('#webHint').classList.add('hidden');
+
+/* ---------- Пункт управления: ссылка для «Команд» ---------- */
+const appBase = location.protocol === 'https:' ? location.origin + location.pathname : 'https://poiskrabot31.github.io/mona-money-web/';
+const ccUrl = 'webapp://' + appBase.replace(/^https:\/\//, '') + '?add=';
+$('#ccUrl').textContent = ccUrl;
+if (NATIVE) $('#ccCard').classList.add('hidden');
+const copyText = async (txt, ok) => {
+  try { await navigator.clipboard.writeText(txt); toast(ok); }
+  catch(e) { const r = document.createRange(); r.selectNodeContents($('#ccUrl')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Выделено — скопируйте вручную'); }
+};
+$('#ccCopy').onclick = () => copyText(ccUrl, 'Ссылка скопирована');
+
+/* ---------- перенос данных ссылкой ---------- */
+const b64u = bytes => { let s=''; for (let i=0;i<bytes.length;i+=0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const unb64u = str => { const s = atob(str.replace(/-/g,'+').replace(/_/g,'/')); const b = new Uint8Array(s.length); for (let i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; };
+async function packData(){
+  const bytes = new TextEncoder().encode(JSON.stringify({v:1, tx:S.tx, cats:S.cats, learn:S.learn}));
+  if (window.CompressionStream) {
+    const z = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+    return 'z' + b64u(z);
+  }
+  return 'j' + b64u(bytes);
+}
+async function unpackData(s){
+  let bytes = unb64u(s.slice(1));
+  if (s[0] === 'z') bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+$('#shareData').onclick = async () => {
+  if (!S.tx.length) return toast('Пока нечего переносить');
+  const url = appBase + '#import=' + await packData();
+  if (navigator.share) { try { await navigator.share({title:'Мои деньги — перенос данных', url}); } catch(e) {} }
+  else copyText(url, 'Ссылка скопирована — отправьте её себе');
+};
+async function importFromHash(code){
+  let d; try { d = await unpackData(code); } catch(e) { toast('Ссылка повреждена'); return; }
+  if (!d || !Array.isArray(d.tx)) { toast('Ссылка повреждена'); return; }
+  const have = new Set(S.tx.map(t => t.id));
+  const fresh = d.tx.filter(t => t && t.id && !have.has(t.id));
+  if (!fresh.length) { toast('Все эти операции уже есть'); return; }
+  if (!confirm(`Добавить ${fresh.length} операций с другого телефона?`)) return;
+  for (const type of ['exp','inc']) for (const c of (d.cats && d.cats[type]) || [])
+    if (!S.cats[type].some(x => x.id === c.id)) S.cats[type].splice(Math.max(0, S.cats[type].length-1), 0, c);
+  Object.assign(S.learn, d.learn || {});
+  S.tx.push(...fresh); save(); render(); toast(`Добавлено ${fresh.length} операций`);
+}
+
+/* ---------- действия по ссылке: ?add=кофе 300, ?voice, #import= ---------- */
+function handleLaunch(){
+  const p = new URLSearchParams(location.search);
+  const add = p.get('add'), voice = p.has('voice'), hash = location.hash;
+  if (p.has('add') || voice || hash.startsWith('#import=')) { try { history.replaceState(null, '', location.pathname); } catch(e) {} }
+  if (add && add.trim()) addFromText(add, 'команда');
+  else if (voice) setTimeout(startVoice, 400);
+  if (hash.startsWith('#import=')) setTimeout(() => importFromHash(hash.slice(8)), 300);
+}
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e) {}
 // подсказка установки: только в Safari на iPhone/iPad, когда сайт открыт не с экрана «Домой»
 try {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -564,6 +771,9 @@ try {
 // первый запуск в приложении: перенести данные из localStorage в файл
 if (NATIVE && !window.__NATIVE_DATA) save();
 render();
+handleLaunch();
+window.__mm = {parseEntries, guessCat, packData}; // для проверки из консоли
+window.addEventListener('hashchange', () => { if (location.hash.startsWith('#import=')) handleLaunch(); });
 })();
 </script>
 </body>
