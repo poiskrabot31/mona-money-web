@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Мои деньги">
+<meta name="theme-color" content="#0f1115">
+<link rel="apple-touch-icon" id="touchIcon" href="icon-180.png">
+<title>Мои деньги</title>
+<style>
+:root{
+  --bg:#f2f3f7; --card:#ffffff; --text:#14161b; --muted:#7b8190; --line:#e4e6ec;
+  --accent:#5b5bf0; --accent-soft:#e8e8fd; --exp:#e5484d; --inc:#1f9d55;
+  --sheet:#ffffff; --key:#eef0f4; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --text:#f1f2f5; --muted:#8c93a3; --line:#2a2e38;
+    --accent:#7c7cff; --accent-soft:#272a4a; --exp:#ff6b6f; --inc:#3ccf7a;
+    --sheet:#1a1d24; --key:#262a33; --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body{padding-top:env(safe-area-inset-top)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+.app{max-width:560px;margin:0 auto;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.muted{color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.sm{font-size:13px}
+.hidden{display:none!important}
+
+/* month switcher */
+.month{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.month b{font-size:17px}
+.month button{width:40px;height:40px;border-radius:12px;background:var(--card);font-size:20px;box-shadow:var(--shadow)}
+
+/* balance */
+.balance .big{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:4px 0 12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pair div{background:var(--bg);border-radius:14px;padding:10px 12px}
+.pair b{display:block;font-size:18px;margin-top:2px}
+.exp{color:var(--exp)} .inc{color:var(--inc)}
+.bar{height:8px;border-radius:8px;background:var(--bg);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .3s}
+.bar.over i{background:var(--exp)}
+
+/* quick input */
+.quick{display:flex;gap:8px}
+.quick input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;outline:none}
+.quick input:focus{border-color:var(--accent)}
+.quick button{background:var(--accent);color:#fff;border-radius:14px;padding:0 16px;font-weight:600}
+.hint{font-size:12px;color:var(--muted);margin:6px 2px 14px}
+
+/* tx list */
+.day{font-size:13px;color:var(--muted);margin:14px 4px 6px;display:flex;justify-content:space-between}
+.tx{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tx:last-child{border-bottom:0}
+.ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none}
+.tx .t{flex:1;min-width:0}
+.tx .t div:first-child{font-weight:600}
+.tx .t div:last-child{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx .a{font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:32px 8px}
+.empty div{font-size:40px;margin-bottom:8px}
+
+/* stats */
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;margin-bottom:12px;box-shadow:var(--shadow)}
+.seg button{flex:1;padding:8px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--accent);color:#fff}
+.donut{display:flex;justify-content:center;position:relative;margin:4px 0 8px}
+.donut .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}
+.donut .c b{font-size:22px;display:block}
+.legend .tx{cursor:pointer}
+.pct{font-size:12px;color:var(--muted);margin-left:6px}
+.mini{height:6px;border-radius:6px;background:var(--bg);margin-top:6px;overflow:hidden}
+.mini i{display:block;height:100%;border-radius:6px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px;padding-top:8px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bars i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:var(--accent-soft);min-height:2px}
+.bars div.cur i{background:var(--accent)}
+.bars span{font-size:11px;color:var(--muted)}
+
+/* settings */
+.set{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);gap:12px}
+.set:last-child{border-bottom:0}
+.set input,.set select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px;width:130px;text-align:right;outline:none}
+.btn{display:block;width:100%;padding:13px;border-radius:14px;background:var(--bg);font-weight:600;text-align:center;margin-top:8px}
+.btn.danger{color:var(--exp)}
+.btn.primary{background:var(--accent);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:12px;background:var(--bg);font-size:14px}
+.chip button{color:var(--muted);font-size:16px;line-height:1;padding:0 2px}
+
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--card) 88%,transparent);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;z-index:10}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);padding:4px 0}
+.tabs button svg{width:26px;height:26px}
+.tabs button.on{color:var(--accent)}
+.tabs .add{flex:none;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff!important;margin-top:-22px;
+  box-shadow:0 6px 18px rgba(91,91,240,.45);justify-content:center}
+.tabs .add svg{width:28px;height:28px}
+
+/* sheet */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--sheet);border-radius:22px 22px 0 0;
+  z-index:21;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding:10px 16px calc(14px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet.open{transform:none}
+.grab{width:40px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 10px}
+.amount{font-size:40px;font-weight:700;text-align:center;margin:6px 0 2px;letter-spacing:-.02em;min-height:52px}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.cats button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;border-radius:14px;font-size:12px;border:2px solid transparent}
+.cats button.on{border-color:var(--accent);background:var(--accent-soft)}
+.cats .ico{width:38px;height:38px}
+.fields{display:flex;gap:8px;margin-bottom:10px}
+.fields input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;outline:none}
+.fields input[type=date]{flex:none;width:150px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys button{height:52px;border-radius:14px;background:var(--key);font-size:22px;font-weight:500}
+.keys button:active{opacity:.6}
+.keys .ok{background:var(--accent);color:#fff;font-size:17px;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:var(--text);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:14px;opacity:0;transition:.25s;z-index:30;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section id="v-home">
+    <h1>Мои деньги</h1>
+    <div class="month"><button data-m="-1">‹</button><b id="mLabel"></b><button data-m="1">›</button></div>
+    <div class="card balance">
+      <div class="muted sm">Остаток за месяц</div>
+      <div class="big" id="bal"></div>
+      <div class="pair">
+        <div><span class="muted sm">Доходы</span><b class="inc" id="sumInc"></b></div>
+        <div><span class="muted sm">Расходы</span><b class="exp" id="sumExp"></b></div>
+      </div>
+      <div id="budgetBox" class="hidden">
+        <div class="bar" id="budgetBar"><i></i></div>
+        <div class="row between sm muted" style="margin-top:6px"><span id="budgetTxt"></span><span id="budgetLeft"></span></div>
+      </div>
+    </div>
+    <form class="quick" id="quick" autocomplete="off">
+      <input id="quickIn" placeholder="500 кофе  или  +60000 зарплата" inputmode="text" enterkeyhint="done">
+      <button type="submit">OK</button>
+    </form>
+    <div class="hint">Быстрый ввод, как в боте: сумма и слово. Плюс в начале — доход.</div>
+    <div id="list"></div>
+  </section>
+
+  <!-- STATS -->
+  <section id="v-stats" class="hidden">
+    <h1>Статистика</h1>
+    <div class="month"><button data-m="-1">‹</button><b class="mLabel2"></b><button data-m="1">›</button></div>
+    <div class="seg" id="statSeg"><button data-t="exp" class="on">Расходы</button><button data-t="inc">Доходы</button></div>
+    <div class="card">
+      <div class="donut"><svg id="donut" width="220" height="220" viewBox="0 0 220 220"></svg>
+        <div class="c"><div><span class="muted sm" id="donutLbl">Всего</span><b id="donutSum"></b></div></div></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="card">
+      <div class="row between"><b>По месяцам</b><span class="muted sm" id="avgTxt"></span></div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-set" class="hidden">
+    <h1>Настройки</h1>
+    <div class="card">
+      <div class="set"><span>Валюта</span>
+        <select id="sCur"><option>₽</option><option>$</option><option>€</option><option>₸</option><option>₴</option><option>Br</option><option>₾</option><option>֏</option><option>сум</option></select></div>
+      <div class="set"><span>Бюджет на месяц</span><input id="sBudget" type="number" inputmode="decimal" placeholder="не задан"></div>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px"><b>Категории расходов</b></div>
+      <div class="chips" id="catsExp"></div>
+      <div class="row between" style="margin:16px 0 10px"><b>Категории доходов</b></div>
+      <div class="chips" id="catsInc"></div>
+      <div class="fields" style="margin-top:14px">
+        <input id="newEmoji" placeholder="🙂" style="flex:none;width:56px;text-align:center" maxlength="4">
+        <input id="newCat" placeholder="Новая категория">
+      </div>
+      <div class="pair"><button class="btn" id="addCatExp" style="margin:0">+ в расходы</button><button class="btn" id="addCatInc" style="margin:0">+ в доходы</button></div>
+    </div>
+    <div class="card">
+      <b>Данные</b>
+      <div class="muted sm" style="margin:4px 0 6px">Всё хранится только на этом устройстве. Делайте резервную копию.</div>
+      <button class="btn" id="exportJson">Сохранить резервную копию (JSON)</button>
+      <button class="btn" id="exportCsv">Выгрузить в таблицу (CSV)</button>
+      <button class="btn" id="importBtn">Восстановить из копии</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+      <button class="btn danger" id="wipe">Удалить все операции</button>
+    </div>
+    <div class="muted sm" id="webHint" style="text-align:center;margin-top:8px">На iPhone: Safari → «Поделиться» → «На экран Домой»</div>
+  </section>
+</div>
+
+<nav class="tabs">
+  <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Главная</button>
+  <button data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Статистика</button>
+  <button class="add" id="fab" aria-label="Добавить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button data-v="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="seg" id="typeSeg" style="box-shadow:none;background:var(--bg)"><button data-t="exp" class="on">Расход</button><button data-t="inc">Доход</button></div>
+  <div class="amount" id="amt">0</div>
+  <div class="cats" id="catGrid"></div>
+  <div class="fields">
+    <input id="fNote" placeholder="Комментарий" maxlength="80">
+    <input id="fDate" type="date">
+  </div>
+  <div class="keys" id="keys">
+    <button>1</button><button>2</button><button>3</button>
+    <button>4</button><button>5</button><button>6</button>
+    <button>7</button><button>8</button><button>9</button>
+    <button>,</button><button>0</button><button data-k="del">⌫</button>
+  </div>
+  <div class="pair" style="margin-top:8px">
+    <button class="btn danger hidden" id="delTx" style="margin:0">Удалить</button>
+    <button class="btn primary" id="saveTx" style="margin:0;grid-column:span 2">Сохранить</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+const KEY = 'mymoney.v1';
+const PALETTE = ['#f59e0b','#ef4444','#3b82f6','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7','#64748b'];
+const DEFAULT = {
+  tx: [],
+  cats: {
+    exp: [
+      {id:'food',name:'Продукты',emoji:'🛒',kw:'продукт еда магазин пятерочка пятёрочка магнит перекресток перекрёсток лента ашан вкусвилл'},
+      {id:'cafe',name:'Кафе',emoji:'☕',kw:'кафе кофе ресторан обед ужин завтрак бар пицца суши шаурма доставка'},
+      {id:'car',name:'Транспорт',emoji:'🚕',kw:'такси метро автобус транспорт бензин заправка азс парковка проезд электричка'},
+      {id:'home',name:'Дом',emoji:'🏠',kw:'квартира аренда жкх коммуналка свет газ вода ремонт дом'},
+      {id:'conn',name:'Связь',emoji:'📱',kw:'связь телефон интернет мобильный сотовый'},
+      {id:'health',name:'Здоровье',emoji:'💊',kw:'аптека врач лекарства здоровье стоматолог анализы'},
+      {id:'shop',name:'Покупки',emoji:'🛍️',kw:'одежда обувь покупки озон ozon wb вайлдберриз wildberries маркетплейс техника'},
+      {id:'fun',name:'Развлечения',emoji:'🎬',kw:'кино развлечения игры концерт театр отдых'},
+      {id:'subs',name:'Подписки',emoji:'🔁',kw:'подписка подписки яндекс плюс музыка netflix spotify'},
+      {id:'gift',name:'Подарки',emoji:'🎁',kw:'подарок подарки цветы'},
+      {id:'edu',name:'Обучение',emoji:'📚',kw:'курсы обучение книги школа учеба учёба'},
+      {id:'other',name:'Другое',emoji:'📦',kw:''}
+    ],
+    inc: [
+      {id:'salary',name:'Зарплата',emoji:'💼',kw:'зарплата зп аванс оклад премия'},
+      {id:'side',name:'Подработка',emoji:'🧰',kw:'подработка фриланс заказ халтура'},
+      {id:'gifts',name:'Подарки',emoji:'🎁',kw:'подарок подарили'},
+      {id:'cashb',name:'Кешбэк',emoji:'💸',kw:'кешбэк кэшбэк кешбек проценты вклад'},
+      {id:'oinc',name:'Другое',emoji:'💰',kw:''}
+    ]
+  },
+  settings: {cur:'₽', budget:0}
+};
+
+// В iOS-приложении страница работает внутри WKWebView и сохраняет данные через нативный мост.
+const NATIVE = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.native;
+const native = m => { try { NATIVE && NATIVE.postMessage(m); } catch(e) {} };
+let S = null;
+try { if (window.__NATIVE_DATA) S = JSON.parse(window.__NATIVE_DATA); } catch(e) { S = null; }
+if (!S) { try { S = JSON.parse(localStorage.getItem(KEY)) || null; } catch(e) { S = null; } }
+if (!S || !S.cats) S = JSON.parse(JSON.stringify(DEFAULT));
+const save = () => {
+  const json = JSON.stringify(S);
+  native({cmd:'save', data:json});
+  try { localStorage.setItem(KEY, json); } catch(e) { if (!NATIVE) toast('Не удалось сохранить'); }
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const pad = n => String(n).padStart(2,'0');
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => isoDate(new Date());
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n, sign) => {
+  const v = Math.round(Math.abs(n)*100)/100;
+  const s = v.toLocaleString('ru-RU', {maximumFractionDigits:2});
+  const pre = sign ? (n < 0 ? '−' : n > 0 ? '+' : '') : (n < 0 ? '−' : '');
+  return `${pre}${s} ${S.settings.cur}`;
+};
+const color = (type, id) => {
+  const i = S.cats[type].findIndex(c => c.id === id);
+  return PALETTE[(i < 0 ? 0 : i + (type === 'inc' ? 3 : 0)) % PALETTE.length];
+};
+const catOf = (type, id) => S.cats[type].find(c => c.id === id) || {id, name:'Без категории', emoji:'❔'};
+
+let cur = new Date(); cur.setDate(1);
+const ym = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const monthName = d => { const s = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'}).replace(/\s*г\.?$/,''); return s[0].toUpperCase() + s.slice(1); };
+const inMonth = (t, d) => t.date.startsWith(ym(d));
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* ---------- views ---------- */
+let view = 'home';
+$$('.tabs [data-v]').forEach(b => b.onclick = () => {
+  view = b.dataset.v;
+  $$('.tabs [data-v]').forEach(x => x.classList.toggle('on', x === b));
+  ['home','stats','set'].forEach(v => $('#v-'+v).classList.toggle('hidden', v !== view));
+  render(); window.scrollTo(0,0);
+});
+$$('[data-m]').forEach(b => b.onclick = () => { cur.setMonth(cur.getMonth() + +b.dataset.m); render(); });
+
+function render(){
+  $('#mLabel').textContent = monthName(cur);
+  $$('.mLabel2').forEach(e => e.textContent = monthName(cur));
+  if (view === 'home') renderHome();
+  if (view === 'stats') renderStats();
+  if (view === 'set') renderSet();
+}
+
+function renderHome(){
+  const tx = S.tx.filter(t => inMonth(t, cur));
+  const inc = tx.filter(t=>t.type==='inc').reduce((a,t)=>a+t.amount,0);
+  const exp = tx.filter(t=>t.type==='exp').reduce((a,t)=>a+t.amount,0);
+  $('#bal').textContent = fmt(inc-exp);
+  $('#sumInc').textContent = fmt(inc);
+  $('#sumExp').textContent = fmt(exp);
+  const b = +S.settings.budget || 0;
+  $('#budgetBox').classList.toggle('hidden', !b);
+  if (b){
+    const p = Math.min(100, exp/b*100);
+    $('#budgetBar i').style.width = p + '%';
+    $('#budgetBar').classList.toggle('over', exp > b);
+    $('#budgetTxt').textContent = `Бюджет ${fmt(b)}`;
+    $('#budgetLeft').textContent = exp > b ? `перерасход ${fmt(exp-b)}` : `осталось ${fmt(b-exp)}`;
+  }
+  const list = $('#list');
+  if (!tx.length){ list.innerHTML = `<div class="empty"><div>🪙</div>В этом месяце операций нет.<br>Нажмите «+» или введите «500 кофе».</div>`; return; }
+  const byDay = {};
+  tx.sort((a,b)=> b.date.localeCompare(a.date) || b.ts - a.ts).forEach(t => (byDay[t.date] ||= []).push(t));
+  list.innerHTML = Object.entries(byDay).map(([d, arr]) => {
+    const dd = new Date(d+'T00:00');
+    const lbl = d === today() ? 'Сегодня' : d === isoDate(new Date(Date.now()-864e5)) ? 'Вчера'
+      : dd.toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'short'});
+    const net = arr.reduce((a,t)=>a+(t.type==='inc'?t.amount:-t.amount),0);
+    return `<div class="day"><span>${lbl}</span><span>${fmt(net,true)}</span></div><div class="card" style="padding:4px 14px">` +
+      arr.map(t => { const c = catOf(t.type,t.cat), col = color(t.type,t.cat);
+        return `<div class="tx" data-id="${t.id}"><div class="ico" style="background:${col}22">${c.emoji}</div>
+          <div class="t"><div>${esc(c.name)}</div><div>${esc(t.note||'')}</div></div>
+          <div class="a ${t.type}">${fmt(t.type==='inc'?t.amount:-t.amount,true)}</div></div>`; }).join('') + `</div>`;
+  }).join('');
+  $$('#list .tx').forEach(el => el.onclick = () => openSheet(S.tx.find(t => t.id === el.dataset.id)));
+}
+
+let statType = 'exp';
+$$('#statSeg button').forEach(b => b.onclick = () => { statType = b.dataset.t; $$('#statSeg button').forEach(x=>x.classList.toggle('on',x===b)); renderStats(); });
+
+function renderStats(){
+  const tx = S.tx.filter(t => t.type===statType && inMonth(t, cur));
+  const total = tx.reduce((a,t)=>a+t.amount,0);
+  const by = {}; tx.forEach(t => by[t.cat] = (by[t.cat]||0) + t.amount);
+  const rows = Object.entries(by).sort((a,b)=>b[1]-a[1]);
+  $('#donutLbl').textContent = statType==='exp' ? 'Расходы' : 'Доходы';
+  $('#donutSum').textContent = fmt(total);
+  // donut
+  const R=88, C=2*Math.PI*R; let off=0;
+  let svg = `<circle cx="110" cy="110" r="${R}" fill="none" stroke="var(--bg)" stroke-width="26"/>`;
+  rows.forEach(([id,v]) => {
+    const len = v/total*C, gap = rows.length>1 ? Math.min(3, len/3) : 0;
+    svg += `<circle cx="110" cy="110" r="${R}" fill="none" stroke="${color(statType,id)}" stroke-width="26"
+      stroke-dasharray="${Math.max(0,len-gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 110 110)"/>`;
+    off += len;
+  });
+  $('#donut').innerHTML = svg;
+  $('#legend').innerHTML = rows.length ? rows.map(([id,v]) => { const c=catOf(statType,id), col=color(statType,id), p=v/total*100;
+    return `<div class="tx"><div class="ico" style="background:${col}22">${c.emoji}</div>
+      <div class="t"><div>${esc(c.name)}<span class="pct">${p.toFixed(p<10?1:0)}%</span></div><div class="mini"><i style="width:${p}%;background:${col}"></i></div></div>
+      <div class="a">${fmt(v)}</div></div>`; }).join('') : `<div class="empty">Нет данных за этот месяц</div>`;
+  // bars (6 months)
+  const months = []; for (let i=5;i>=0;i--){ const d=new Date(cur); d.setMonth(d.getMonth()-i); months.push(d); }
+  const vals = months.map(d => S.tx.filter(t=>t.type===statType && inMonth(t,d)).reduce((a,t)=>a+t.amount,0));
+  const max = Math.max(1, ...vals);
+  $('#bars').innerHTML = months.map((d,i) => `<div class="${i===5?'cur':''}" title="${fmt(vals[i])}"><span>${vals[i]?shortNum(vals[i]):''}</span><i style="height:${vals[i]/max*85}%"></i><span>${d.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</span></div>`).join('');
+  const nz = vals.filter(Boolean);
+  $('#avgTxt').textContent = nz.length ? `в среднем ${fmt(nz.reduce((a,b)=>a+b,0)/nz.length)}` : '';
+}
+const shortNum = n => n>=1e6 ? (n/1e6).toFixed(1).replace('.0','')+'м' : n>=1e3 ? Math.round(n/1e3)+'к' : Math.round(n);
+
+function renderSet(){
+  $('#sCur').value = S.settings.cur;
+  $('#sBudget').value = S.settings.budget || '';
+  ['exp','inc'].forEach(type => {
+    $(type==='exp'?'#catsExp':'#catsInc').innerHTML = S.cats[type].map(c =>
+      `<span class="chip">${c.emoji} ${esc(c.name)}${S.cats[type].length>1?`<button data-del="${type}:${c.id}" aria-label="Удалить">×</button>`:''}</span>`).join('');
+  });
+  $$('[data-del]').forEach(b => b.onclick = () => {
+    const [type,id] = b.dataset.del.split(':'); const c = catOf(type,id);
+    const used = S.tx.filter(t=>t.type===type && t.cat===id).length;
+    if (!confirm(`Удалить категорию «${c.name}»?` + (used?`\nОперации (${used}) перейдут в «Другое».`:''))) return;
+    S.cats[type] = S.cats[type].filter(x=>x.id!==id);
+    const fallback = S.cats[type][S.cats[type].length-1].id;
+    S.tx.forEach(t => { if (t.type===type && t.cat===id) t.cat = fallback; });
+    save(); renderSet();
+  });
+}
+$('#sCur').onchange = e => { S.settings.cur = e.target.value; save(); };
+$('#sBudget').onchange = e => { S.settings.budget = Math.max(0, parseFloat(e.target.value)||0); save(); toast('Бюджет сохранён'); };
+const addCat = type => {
+  const name = $('#newCat').value.trim(); if (!name) return toast('Введите название');
+  const emoji = $('#newEmoji').value.trim() || (type==='exp'?'🏷️':'💰');
+  const list = S.cats[type]; const other = list.findIndex(c => c.name==='Другое');
+  const item = {id:uid(), name, emoji, kw:name.toLowerCase()};
+  other >= 0 ? list.splice(other,0,item) : list.push(item);
+  $('#newCat').value=''; $('#newEmoji').value=''; save(); renderSet(); toast('Категория добавлена');
+};
+$('#addCatExp').onclick = () => addCat('exp');
+$('#addCatInc').onclick = () => addCat('inc');
+
+const download = (name, text, type) => {
+  if (NATIVE) return native({cmd:'share', name, text});
+  const blob = new Blob([text], {type});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+};
+$('#exportJson').onclick = () => download(`money-backup-${today()}.json`, JSON.stringify(S,null,1), 'application/json');
+$('#exportCsv').onclick = () => {
+  const q = s => `"${String(s).replace(/"/g,'""')}"`;
+  const rows = [['Дата','Тип','Категория','Сумма','Комментарий'].join(';')].concat(
+    [...S.tx].sort((a,b)=>a.date.localeCompare(b.date)).map(t => [t.date, t.type==='inc'?'Доход':'Расход', q(catOf(t.type,t.cat).name),
+      String(t.type==='inc'?t.amount:-t.amount).replace('.',','), q(t.note||'')].join(';')));
+  download(`money-${today()}.csv`, '﻿'+rows.join('\n'), 'text/csv');
+};
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.tx) || !d.cats) throw 0;
+      if (!confirm(`Заменить текущие данные копией (${d.tx.length} операций)?`)) return;
+      S = d; S.settings ||= {cur:'₽',budget:0}; save(); render(); toast('Данные восстановлены');
+    } catch(_) { toast('Файл не подходит'); } };
+  r.readAsText(f); e.target.value='';
+};
+$('#wipe').onclick = () => { if (confirm('Удалить все операции без возможности восстановления?')) { S.tx=[]; save(); render(); toast('Операции удалены'); } };
+
+/* ---------- quick input ---------- */
+function guessCat(type, words){
+  const w = words.toLowerCase();
+  for (const c of S.cats[type]) {
+    const keys = (c.kw||'').split(/\s+/).concat(c.name.toLowerCase()).filter(Boolean);
+    if (keys.some(k => w.includes(k) || (k.length>4 && w.split(/\s+/).some(x => x.length>3 && k.startsWith(x.slice(0,-1)))))) return c.id;
+  }
+  const o = S.cats[type].find(c=>c.name==='Другое') || S.cats[type][S.cats[type].length-1];
+  return o.id;
+}
+$('#quick').onsubmit = e => {
+  e.preventDefault();
+  const raw = $('#quickIn').value.trim(); if (!raw) return;
+  const m = raw.match(/^([+\-])?\s*(\d[\d\s]*(?:[.,]\d{1,2})?)\s*(.*)$/) || raw.match(/^(.*?)\s+([+\-])?\s*(\d[\d\s]*(?:[.,]\d{1,2})?)$/);
+  let sign, num, note;
+  if (!m) return toast('Начните с суммы: «500 кофе»');
+  if (/^[+\-]?\s*\d/.test(raw)) { [, sign, num, note] = m; } else { [, note, sign, num] = m; }
+  const amount = parseFloat(num.replace(/\s/g,'').replace(',','.'));
+  if (!(amount > 0)) return toast('Сумма должна быть больше нуля');
+  let type = sign === '+' ? 'inc' : 'exp';
+  if (!sign && /зарплат|зп\b|аванс|премия|кешб|кэшб/i.test(note)) type = 'inc';
+  const cat = guessCat(type, note);
+  S.tx.push({id:uid(), type, amount, cat, note:note.trim(), date:today(), ts:Date.now()});
+  save(); native({cmd:'haptic'}); $('#quickIn').value=''; $('#quickIn').blur();
+  cur = new Date(); cur.setDate(1); render();
+  toast(`${type==='inc'?'Доход':'Расход'} ${fmt(amount)} → ${catOf(type,cat).name}`);
+};
+
+/* ---------- add/edit sheet ---------- */
+let edit = null, fType = 'exp', fCat = null, fAmt = '';
+function openSheet(tx){
+  edit = tx || null;
+  fType = tx ? tx.type : 'exp';
+  fCat = tx ? tx.cat : null;
+  fAmt = tx ? String(tx.amount).replace('.',',') : '';
+  $('#fNote').value = tx ? (tx.note||'') : '';
+  $('#fDate').value = tx ? tx.date : today();
+  $('#delTx').classList.toggle('hidden', !tx);
+  $('#saveTx').style.gridColumn = tx ? '' : 'span 2';
+  syncSheet();
+  $('#overlay').classList.add('open'); $('#sheet').classList.add('open');
+}
+function closeSheet(){ $('#overlay').classList.remove('open'); $('#sheet').classList.remove('open'); }
+function syncSheet(){
+  $$('#typeSeg button').forEach(b => b.classList.toggle('on', b.dataset.t===fType));
+  if (!S.cats[fType].some(c=>c.id===fCat)) fCat = S.cats[fType][0].id;
+  $('#amt').textContent = (fAmt || '0') + ' ' + S.settings.cur;
+  $('#amt').className = 'amount ' + fType;
+  $('#catGrid').innerHTML = S.cats[fType].map(c => `<button data-c="${c.id}" class="${c.id===fCat?'on':''}">
+    <span class="ico" style="background:${color(fType,c.id)}22">${c.emoji}</span>${esc(c.name)}</button>`).join('');
+  $$('#catGrid button').forEach(b => b.onclick = () => { fCat = b.dataset.c; syncSheet(); });
+}
+$('#fab').onclick = () => openSheet(null);
+$('#overlay').onclick = closeSheet;
+$$('#typeSeg button').forEach(b => b.onclick = () => { fType = b.dataset.t; fCat = null; syncSheet(); });
+$$('#keys button').forEach(b => b.onclick = () => {
+  const k = b.dataset.k || b.textContent;
+  if (k === 'del') fAmt = fAmt.slice(0,-1);
+  else if (k === ',') { if (!fAmt.includes(',')) fAmt = (fAmt||'0') + ','; }
+  else {
+    if (fAmt.includes(',') && fAmt.split(',')[1].length >= 2) return;
+    if (fAmt.replace(',','').length >= 10) return;
+    fAmt = fAmt === '0' ? k : fAmt + k;
+  }
+  syncSheet();
+});
+$('#saveTx').onclick = () => {
+  const amount = parseFloat((fAmt||'').replace(',','.'));
+  if (!(amount > 0)) return toast('Введите сумму');
+  const data = {type:fType, amount, cat:fCat, note:$('#fNote').value.trim(), date:$('#fDate').value || today()};
+  if (edit) Object.assign(edit, data); else S.tx.push({id:uid(), ts:Date.now(), ...data});
+  save(); native({cmd:'haptic'}); closeSheet();
+  const d = new Date(data.date+'T00:00'); cur = new Date(d.getFullYear(), d.getMonth(), 1);
+  render(); toast(edit ? 'Изменено' : 'Добавлено');
+};
+$('#delTx').onclick = () => { if (!edit || !confirm('Удалить операцию?')) return;
+  S.tx = S.tx.filter(t => t !== edit); save(); closeSheet(); render(); toast('Удалено'); };
+
+/* ---------- home-screen icon (запасной, если icon-180.png нет рядом) ---------- */
+if (location.protocol === 'file:') try {
+  const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0,0,180,180); g.addColorStop(0,'#7c7cff'); g.addColorStop(1,'#4338ca');
+  x.fillStyle = g; x.fillRect(0,0,180,180);
+  x.fillStyle = '#fff'; x.font = 'bold 100px -apple-system, Segoe UI, sans-serif'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText('₽', 90, 96);
+  $('#touchIcon').href = c.toDataURL('image/png');
+} catch(e) {}
+
+if (NATIVE) $('#webHint').classList.add('hidden');
+// первый запуск в приложении: перенести данные из localStorage в файл
+if (NATIVE && !window.__NATIVE_DATA) save();
+render();
+})();
+</script>
+</body>
+</html>
