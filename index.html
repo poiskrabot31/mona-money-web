@@ -142,6 +142,15 @@ h1{font-size:28px;margin:8px 0 12px;letter-spacing:-.02em}
 
   <!-- HOME -->
   <section id="v-home">
+    <div class="card hidden" id="installTip" style="background:var(--accent);color:#fff">
+      <div class="row between" style="align-items:flex-start">
+        <b>Установите на экран «Домой»</b>
+        <button id="installClose" style="color:#fff;font-size:20px;line-height:1;padding:0 4px" aria-label="Закрыть">×</button>
+      </div>
+      <div style="margin-top:6px;font-size:15px">Нажмите <b>Поделиться</b>
+        <svg width="16" height="18" viewBox="0 0 16 20" fill="none" stroke="#fff" stroke-width="1.8" style="vertical-align:-3px"><path d="M8 13V1M4 5l4-4 4 4M3 9H1v10h14V9h-2"/></svg>
+        внизу экрана, затем <b>«На экран „Домой“»</b> → <b>Добавить</b>.</div>
+    </div>
     <h1>Мои деньги</h1>
     <div class="month"><button data-m="-1">‹</button><b id="mLabel"></b><button data-m="1">›</button></div>
     <div class="card balance">
@@ -544,6 +553,14 @@ if (location.protocol === 'file:') try {
 } catch(e) {}
 
 if (NATIVE) $('#webHint').classList.add('hidden');
+// подсказка установки: только в Safari на iPhone/iPad, когда сайт открыт не с экрана «Домой»
+try {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  let closed = false; try { closed = localStorage.getItem('installTipClosed') === '1'; } catch(e) {}
+  if (ios && !standalone && !NATIVE && location.protocol === 'https:' && !closed) $('#installTip').classList.remove('hidden');
+  $('#installClose').onclick = () => { $('#installTip').classList.add('hidden'); try { localStorage.setItem('installTipClosed','1'); } catch(e) {} };
+} catch(e) {}
 // первый запуск в приложении: перенести данные из localStorage в файл
 if (NATIVE && !window.__NATIVE_DATA) save();
 render();
